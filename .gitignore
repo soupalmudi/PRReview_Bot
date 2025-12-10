@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+*.log
+.DS_Store
+backend/.env
+frontend/.env
+backend_flask/.env
+.venv
