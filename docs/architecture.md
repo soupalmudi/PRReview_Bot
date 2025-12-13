@@ -21,6 +21,43 @@ High-Level Design
 - Queue/Future Scaling
   - For larger PRs, enqueue jobs (BullMQ/SQS) and stream partial results via SSE/WebSocket.
 
+Logical Architecture
+--------------------
+```
+Developer
+   |
+   v
+Frontend (React/Vite)
+   |  REST: POST /api/review
+   v
+Backend (Flask)
+   |-- Request validation
+   |-- Secret scrubber
+   |-- Review orchestrator
+   |     |-- chunk diff
+   |     |-- prompt builder
+   |     |-- aggregate findings
+   |-- LLM client (provider adapter)
+   |     |-- OpenAI (default)
+   |     |-- other providers (future)
+   |
+   v
+Response: findings + diagnostics
+```
+
+Process Flow (happy path)
+-------------------------
+```
+1) Frontend POST /api/review with repo/prNumber/diff/config
+2) Backend validates payload size + required fields
+3) Scrubber redacts obvious secrets from diff
+4) Orchestrator chunks diff per file and builds prompt
+5) LLM client calls provider (OpenAI) with JSON-only instructions
+6) Parse response → normalize findings (severity, category, filePath, line)
+7) Return findings + diagnostics (latency, tokens, truncation flag) to frontend
+8) Frontend renders grouped findings with filters
+```
+
 Data Model (draft)
 ------------------
 - ReviewRequest: repo, prNumber, diff, filesChanged[], config (model, temperature, maxTokens, categories enabled).
